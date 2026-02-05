@@ -1,0 +1,39 @@
+version: 1
+project:
+  title: '计算物理学：从数值模拟到 AI 驱动'
+  description: '根据 2026 年教学大纲构建的计算物理课程讲义'
+  github: https://github.com/sunflowerlily/PHY-2026-Computational-Physics
+  toc:
+    - file: readme.md
+    - title: 第一部分：计算思维与现代工具
+      file: part1_basics/introduction.md
+      children:
+        - file: part1_basics/week01_paradigm.md
+        - file: part1_basics/week02_numpy.md
+        - file: part1_basics/week03_visualization.md
+    - title: 第二部分：动力学、混沌与频域分析
+      file: part2_dynamics/introduction.md
+      children:
+        - file: part2_dynamics/week04_ivp.md
+        - file: part2_dynamics/week05_symplectic.md
+        - file: part2_dynamics/week06_fft.md
+        - file: part2_dynamics/week07_bvp.md
+        - file: part2_dynamics/week08_midterm_project.md
+        - file: part2_dynamics/week09_review.md
+    - title: 第三部分：场、波与谱方法
+      file: part3_pde/introduction.md
+      children:
+        - file: part3_pde/week10_electrostatics.md
+        - file: part3_pde/week11_diffusion.md
+        - file: part3_pde/week12_spectral_methods.md
+        - file: part3_pde/week13_hpc.md
+    - title: 第四部分：随机性、统计与 AI 驱动物理
+      file: part4_stochastic_ai/introduction.md
+      children:
+        - file: part4_stochastic_ai/week14_monte_carlo.md
+        - file: part4_stochastic_ai/week15_stat_phys.md
+        - file: part4_stochastic_ai/week16_ai_discovery.md
+        - file: part4_stochastic_ai/week17_pinns.md
+        - file: part4_stochastic_ai/week18_final_project.md
+site:
+  template: book-theme
