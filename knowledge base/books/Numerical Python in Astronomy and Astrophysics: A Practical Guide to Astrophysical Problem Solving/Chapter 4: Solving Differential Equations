@@ -1,0 +1,846 @@
+# Chapter 4: Solving Differential Equations
+
+**Abstract:** Differential equations play a central role in numerics. We introduce basic algorithms for first and second-order initial value problems. This will allow us to numerically solve many interesting problems, for instance, a body falling through the atmosphere, two and three-body problems, a simple model for galaxy collisions, and the expansion of the Universe. Apart from learning how to deal with numerical errors, mastering multi-dimensional arrays and complex operations are important objectives of this chapter. Moreover, it is shown how to produce histograms and three-dimensional plots.
+
+---
+
+## 4.1 Numerical Integration of Initial Value Problems
+
+From Newton's laws to Schrödinger's equation: physics is packed with differential equations. While the majority are partial differential equations, such as Euler's equations of fluid dynamics, Maxwell's equations for electromagnetic fields, and Schrödinger's equation for the wave function in quantum physics, there also are many applications of ordinary differential equations. In contrast to partial differential equations, ordinary differential equations determine functions of a single variable. In this section, you will learn how to solve such equations numerically.
+
+### 4.1.1 First Order Differential Equations
+
+A differential equation of first order determines a time-dependent function $x(t)$ by a relation between the function and its first derivative $\dot{x}$. An example is the equation for radioactive decay:
+
+$$\dot{x} = -\lambda x$$
+
+The solution of this equation is $x(t) = x_0 e^{-\lambda t}$, where $x_0 = x(0)$ is said to be the **initial value**. While it is straightforward to solve a linear differential equation, in which all terms are linear in $x$ or $\dot{x}$, non-linear differential equations are more challenging.
+
+Consider the **Bernoulli equation**:
+
+$$\dot{x} = \alpha(t)x + \beta(t)x^\rho$$
+
+where $\alpha(t)$ and $\beta(t)$ are given functions and $\rho$ is a real number. It encompasses important differential equations as special cases, for example, Eq. (4.1) follows for $\alpha(t) = -\lambda$, $\beta(t) = 0$, $\rho = 0$ and the logistic equation describing population dynamics for $\alpha(t) = a$, $\beta(t) = b$ with constants $a > 0$, $b < 0$, and $\rho = 2$ (see Exercise 4.1). From the viewpoint of numerics, Bernoulli-type equations are interesting because an analytic solution is known and can be compared to numerical approximations.
+
+#### Strömgren Sphere Example
+
+In the following, we will attempt to numerically solve an example for a Bernoulli equation from astrophysics, namely the equation for the radial expansion of a so-called **Strömgren sphere**. When a hot, massive star is borne, it floods its surroundings with strongly ionizing UV radiation. As a result, a spherical bubble of ionized hydrogen (HII) forms around the star. It turns out that ionization progresses as ionization front, i.e. a thin spherical shell propagating outwards. Inside the shell, virtually all hydrogen is ionized. The radial propagation of the shell is described by a differential equation for the time-dependent radius $r(t)$:
+
+$$\dot{r} = \frac{1}{4\pi r^2 n_0}\left(S_* - \frac{4\pi}{3}r^3 n_0^2 \alpha\right)$$
+
+Here, $S_*$ is the total number of ionizing photons per unit time, $n_0$ is the number density of neutral hydrogen atoms (HI), and $\alpha \approx 3.1 \times 10^{-13} \text{ cm}^3 \text{ s}^{-1}$ is the recombination coefficient.
+
+Equation (4.3) can be rewritten in the form:
+
+$$\dot{r} = n_0 \alpha \frac{r_s^3 - r^3}{3r^2}$$
+
+where
+
+$$r_s = \left(\frac{3S_*}{4\pi n_0^2 \alpha}\right)^{1/3}$$
+
+is the **Strömgren radius**. The speed $\dot{r}$ approaches zero for $r \rightarrow r_s$; the propagation of the ionization front slows down and stalls at the Strömgren radius.
+
+**Calculation for an O6 star:**
+
+```python
+import numpy as np
+import astropy.units as unit
+
+n0 = 5000 * 1/unit.cm**3      # number density of HI
+S = 1.6e49 * 1/unit.s         # ionizing photons emitted per second
+alpha = 3.1e-13 * unit.cm**3/unit.s  # recombination coefficient
+
+rs = (3*S/(4*np.pi * n0**2*alpha))**(1/3)
+print("Stroemgren radius = {:.2f}".format(rs.to(unit.pc)))
+```
+
+Output:
+```
+Stroemgren radius = 0.26 pc
+```
+
+#### Euler Method
+
+To integrate Eq. (4.4) in time, we can apply a linear approximation over a small time interval $[t, t + \Delta t]$ (also called time step):
+
+$$r(t + \Delta t) \simeq r(t) + \dot{r}(t)\Delta t$$
+
+Starting with an initial value $r(0) = r_0$, this rule can be applied iteratively for $t_n = n\Delta t$. This is the basic idea of the **Euler method**. For a general first-order differential equation:
+
+$$\dot{x} = f(t, x)$$
+
+it can be written as iterative scheme:
+
+$$x_{n+1} = x_n + f(t_n, x_n)\Delta t$$
+
+where $x_n = x(t_n)$ and $n = 0, 1, 2, \ldots$
+
+**Implementation:**
+
+```python
+n0_cgs = n0.value
+alpha_cgs = alpha.value
+rs_cgs = rs.value
+
+# time step in s
+dt = 100
+n_steps = 1000
+
+# initialization of arrays for t and r(t)
+t = np.linspace(0, n_steps*dt, n_steps+1)
+r = np.zeros(n_steps+1)
+
+# start radius in cm
+r[0] = 1e16
+
+# Euler integration
+for n in range(n_steps):
+    rdot = n0_cgs * alpha_cgs * (rs_cgs**3 - r[n]**3) / (3*r[n]**2)
+    r[n+1] = r[n] + rdot * dt
+```
+
+**Plotting:**
+
+```python
+import matplotlib.pyplot as plt
+
+fig = plt.figure(figsize=(6,4), dpi=100)
+plt.plot(t, rs_cgs*(1.0-np.exp(-n0_cgs*alpha_cgs*t))**(1/3),
+         linestyle='-', color='red', label="analytic")
+plt.plot(t, r, linestyle='--', color='green', label="Euler")
+plt.legend(loc='lower right')
+plt.xlabel("$t$ [s]")
+plt.ylabel("$r$ [cm]")
+plt.savefig("stroemgren_cgs.pdf")
+```
+
+The analytic solution is:
+
+$$r(t) = r_s\left(1 - e^{-n_0 \alpha t}\right)^{1/3}$$
+
+By shifting the time coordinate such that $r(0) = r_0$, we get:
+
+$$t_0 = \frac{1}{n_0 \alpha} \log\left[1 - \left(r_0/r_s\right)^3\right]$$
+
+The time scale $t_s = 1/(n_0 \alpha)$ is the formation time of the Strömgren sphere:
+
+```python
+ts = 1/(n0*alpha)
+print("Time scale = {:.2f}".format(ts.to(unit.yr)))
+```
+
+Output:
+```
+Time scale = 20.44 yr
+```
+
+#### Dimensionless Formulation
+
+The differential equation can be expressed in terms of dimensionless variables $\tilde{r} = r/r_s$ and $\tilde{t} = t/t_s$:
+
+$$\frac{d\tilde{r}}{d\tilde{t}} = \frac{1 - \tilde{r}^3}{3\tilde{r}^2}$$
+
+**Convergence test with different time steps:**
+
+```python
+# initial radius (dimensionless)
+r0 = 0.01
+
+# analytic solution
+t0 = np.log(1-r0**3)
+t = np.arange(0, 2.0, 0.01)
+
+fig = plt.figure(figsize=(6,4), dpi=100)
+plt.plot(t, (1.0-np.exp(-t+t0))**(1/3),
+         color='red', label="analytic")
+
+# time step (dimensionless)
+dt = 1e-3
+n_steps = 2000
+
+while dt >= 1e-5:
+    t = np.linspace(0, n_steps*dt, n_steps+1)
+    r = np.zeros(n_steps+1)
+    r[0] = r0
+    
+    print("Integrating {:d} steps for dt = {:.0e}".format(n_steps, dt))
+    for n in range(n_steps):
+        rdot = (1 - r[n]**3) / (3*r[n]**2)
+        r[n+1] = r[n] + rdot * dt
+    
+    # plot the data
+    plt.plot(t, r, linestyle='--',
+             label="Euler, $\Delta t$ = {:.1f}".format(dt*ts.to(unit.hr)))
+    
+    # decrease time step by factor of 10
+    dt *= 0.1
+    n_steps *= 10
+
+plt.legend(loc='lower right')
+plt.xlabel("$t/t_s$")
+plt.ylabel("$r/r_s$")
+plt.ylim(0, 1)
+```
+
+The largest time step $\Delta\tilde{t} = 10^{-3}$ clearly does not work. Only the smallest time step, $\Delta\tilde{t} = 10^{-5}$, results in an acceptable approximation. However, 200,000 steps are required.
+
+#### Runge-Kutta Method (RK4)
+
+The **classic Runge-Kutta method** is fourth-order accurate (RK4). The scheme is defined by:
+
+$$k_1 = f(t, x)\Delta t$$
+$$k_2 = f(t + \Delta t/2, x + k_1/2)\Delta t$$
+$$k_3 = f(t + \Delta t/2, x + k_2/2)\Delta t$$
+$$k_4 = f(t + \Delta t, x + k_3)\Delta t$$
+
+$$x(t + \Delta t) = x(t) + \frac{1}{6}\left[k_1 + 2(k_2 + k_3) + k_4\right]$$
+
+**Implementation:**
+
+```python
+def rk4_step(f, t, x, dt):
+    k1 = dt * f(t, x)
+    k2 = dt * f(t + 0.5*dt, x + 0.5*k1)
+    k3 = dt * f(t + 0.5*dt, x + 0.5*k2)
+    k4 = dt * f(t + dt, x + k3)
+    return x + (k1 + 2*(k2 + k3) + k4) / 6
+```
+
+Using RK4 with the same time steps shows significant improvement. For $\Delta\tilde{t} = 10^{-4}$ or smaller, the analytic solution is closely reproduced.
+
+Endpoint deviations:
+- `dt = 1e-03`: deviation = 2.08e-01
+- `dt = 1e-04`: deviation = 2.23e-04  
+- `dt = 1e-05`: deviation = 2.26e-07
+
+---
+
+### 4.1.2 Second Order Differential Equations
+
+In mechanics, we typically deal with second order differential equations of the form:
+
+$$\ddot{x} = f(t, x, \dot{x})$$
+
+where $x(t)$ is the unknown position function, $\dot{x}(t)$ the velocity, and $\ddot{x}(t)$ the acceleration.
+
+#### Examples
+
+**Free fall:**
+$$\ddot{x} = g$$
+
+**Harmonic oscillator:**
+$$m\ddot{x} + kx = 0 \quad \Rightarrow \quad \ddot{x} = -\frac{k}{m}x$$
+
+Solution: $x(t) = x_0 \cos(\omega_0 t)$, where $\omega_0 = \sqrt{k/m}$
+
+**Damped harmonic oscillator:**
+$$m\ddot{x} + d\dot{x} + kx = 0$$
+
+$$\ddot{x} = f(x, \dot{x}) = -\frac{d}{m}\dot{x} - \frac{k}{m}x$$
+
+**Python function:**
+
+```python
+def xddot(t, x, xdot, m, d, k):
+    """
+    acceleration function of damped harmonic oscillator
+    
+    args: t - time
+          x - position
+          xdot - velocity
+          m - mass
+          d - damping constant
+          k - spring constant
+    returns: acceleration
+    """
+    return -(d*xdot + k*x) / m
+```
+
+#### Forward Euler Method for Second Order ODEs
+
+The forward Euler method is given by the iteration rules:
+
+$$x_{n+1} = x_n + \dot{x}_n \Delta t$$
+$$\dot{x}_{n+1} = \dot{x}_n + f(t_n, x_n, \dot{x}_n)\Delta t$$
+
+**Implementation:**
+
+```python
+def euler_forward(f, t, x, xdot, h, *args):
+    """
+    Euler forward step for function x(t)
+    given by second order differential equation
+    
+    args: f - function determining second derivative
+          t - value of independent variable t
+          x - value of x(t)
+          xdot - value of first derivative dx/dt
+          h - time step
+          *args - additional parameters for f
+    returns: iterated values for t + h
+    """
+    return (x + h*xdot, xdot + h*f(t, x, xdot, *args))
+```
+
+**Example usage:**
+
+```python
+import numpy as np
+
+# parameters (arbitrary units)
+m = 1.0
+d = 0.05
+k = 0.5
+x0 = 10.0
+
+n = 1000      # number of time steps
+dt = 0.05     # time step
+t = np.arange(0, n*dt, dt)
+
+# initialization
+x_fe = np.zeros(n)
+v_fe = np.zeros(n)
+x_fe[0], v_fe[0] = x0, 0
+
+# numerical integration
+for i in range(n-1):
+    x_fe[i+1], v_fe[i+1] = euler_forward(xddot, t[i], x_fe[i], v_fe[i], dt, m, d, k)
+```
+
+**Analytic solution for damped oscillator:**
+
+$$x(t) = x_0 e^{-\gamma t}\left[\cos(\omega t) + \frac{\gamma}{\omega}\sin(\omega t)\right]$$
+
+where $\gamma = d/(2m)$ and $\omega = \sqrt{\omega_0^2 - \gamma^2}$
+
+```python
+def osc(t, m, d, k):
+    try:
+        if m > 0 and d > 0 and k > 0:
+            gamma = 0.5 * d / m
+            omega0 = np.sqrt(k / m)
+            if omega0 >= gamma:
+                omega = np.sqrt(omega0**2 - gamma**2)
+                return np.exp(-gamma*t) * (np.cos(omega*t) + gamma*np.sin(omega*t)/omega)
+            else:
+                raise ValueError
+        else:
+            raise ValueError
+    except ValueError:
+        print("Invalid argument: non-positive parameters or overdamped")
+        return None
+```
+
+#### Symplectic Euler Method
+
+The **symplectic Euler method** uses the new velocity to calculate the change in position:
+
+$$x_{n+1} = x_n + \dot{x}_{n+1}\Delta t$$
+$$\dot{x}_{n+1} = \dot{x}_n + f(t_n, x_n, \dot{x}_n)\Delta t$$
+
+This is a semi-implicit scheme. The error does not increase with time (property of symplectic solvers).
+
+#### Runge-Kutta-Nyström Method (RKN4)
+
+A fourth-order method for second-order ODEs:
+
+$$x_{n+1} = x_n + \Delta t \dot{x}_n + \Delta t^2 \sum_{i=0}^{4} c_i f_{ni}$$
+$$\dot{x}_{n+1} = \dot{x}_n + \Delta t \sum_{i=0}^{4} \dot{c}_i f_{ni}$$
+
+**Using the numkit module:**
+
+```python
+from numkit import euler_step, rkn4_step
+
+x_rkn4 = np.zeros(n)
+v_rkn4 = np.zeros(n)
+x_se = np.zeros(n)
+v_se = np.zeros(n)
+
+x_rkn4[0], v_rkn4[0] = x0, 0
+x_se[0], v_se[0] = x0, 0
+
+for i in range(n-1):
+    x_rkn4[i+1], v_rkn4[i+1] = rkn4_step(xddot, t[i], x_rkn4[i], v_rkn4[i], dt, m, d, k)
+    x_se[i+1], v_se[i+1] = euler_step(xddot, t[i], x_se[i], v_se[i], dt, m, d, k)
+```
+
+The RKN4 method improves accuracy by more than six orders of magnitude compared to the forward Euler method, requiring only five function evaluations vs. one.
+
+---
+
+## 4.2 Radial Fall
+
+### The Tunguska Event
+
+Eyewitnesses observed a bright flash followed by a huge explosion in a remote area of the Siberian Taiga on June 30, 1908. The most likely explanation is an airburst of a medium sized asteroid several kilometers above the surface of Earth.
+
+### Equation of Motion
+
+For radial infall with air resistance:
+
+$$\ddot{h} = -\frac{GM_\oplus}{(R_\oplus + h)^2} + \frac{1}{2m}\rho_{\text{air}}(h) C_D A \dot{h}^2$$
+
+where $A = \pi R^2$ is the cross section, $C_D \approx 0.5$ is the drag coefficient, and the air density is approximated by:
+
+$$\rho_{\text{air}}(h) = 1.3 \text{ kg/m}^3 \exp(-h/8.4\text{ km})$$
+
+**Asteroid parameters:**
+
+```python
+import numpy as np
+import astropy.units as unit
+from astropy.constants import G, M_earth, R_earth
+
+# asteroid parameters
+R = 34 * unit.m                    # radius
+V = (4*np.pi/3) * R**3             # volume
+rho = 2.2e3 * unit.kg/unit.m**3    # density
+m = rho * V                        # mass
+
+# initial conditions
+h0 = 300 * unit.km
+v0 = np.sqrt(2*G*M_earth/(R_earth + h0))
+```
+
+**Acceleration function:**
+
+```python
+from numkit import rkn4_step
+
+c_drag = 0.5
+
+def rho_air(h):
+    return 1.3 * np.exp(-h/8.4e3)
+
+def hddot(t, h, hdot, m, R):
+    # air resistance
+    F_drag = 0.5 * rho_air(h) * c_drag * np.pi * R**2 * hdot**2
+    # gravity at height h
+    g_h = G.value * M_earth.value / (R_earth.value + h)**2
+    return -g_h + F_drag / m
+```
+
+**Integration:**
+
+```python
+# initial data
+data = [[0, h0.to(unit.m).value, -v0.value]]
+
+# initialization
+t, h, hdot = tuple(data[0])
+dt = 0.1
+
+while h > 0:
+    h, hdot = rkn4_step(hddot, t, h, hdot, dt, m.value, R.value)
+    t += dt
+    data = np.append(data, [[t, h, hdot]], axis=0)
+```
+
+**Plotting:**
+
+```python
+import matplotlib.pyplot as plt
+
+plt.figure(figsize=(12,4), dpi=100)
+
+plt.subplot(121)
+plt.plot(data[:,0], 1e-3*data[:,1])
+plt.xlabel("$t$ [s]")
+plt.ylabel("$h$ [km]")
+
+plt.subplot(122)
+plt.plot(1e-3*data[:,1], -1e-3*data[:,2])
+plt.xlim(h0.value+10, -10)
+plt.xlabel("$h$ [km]")
+plt.ylabel("$-\dot{h}$ [km/s]")
+plt.savefig("asteroid.pdf")
+```
+
+### Energy Dissipation
+
+The heating rate caused by air resistance:
+
+$$\dot{E} = -\frac{1}{2} C_D A \rho_{\text{air}}(h) \dot{h}^3$$
+
+**Integration using trapezoidal rule:**
+
+```python
+def integr_trapez(y, h):
+    """
+    numerical integration of a function given by discrete data
+    
+    args: y - array of function values
+          h - spacing between x values
+    returns: approximate integral
+    """
+    return 0.5 * h * (y[0] + 2*np.sum(y[1:-1]) + y[-1])
+
+def dissipation(h, hdot, m, R):
+    return -0.5 * rho_air(h) * c_drag * np.pi * R**2 * hdot**3
+
+energy_diss = integr_trapez(
+    dissipation(data[:,1], data[:,2], m.value, R.value), dt) * unit.J
+
+print("Fraction of dissipated energy = {:.2f}%".format(
+    100 * energy_diss / energy_kin.to(unit.J)))
+```
+
+Result: About 5% of the asteroid's energy is converted into heat.
+
+---
+
+## 4.3 Orbital Mechanics
+
+### Two-Body Problem: Sirius A and B
+
+**Parameters:**
+
+```python
+import numpy as np
+from scipy.constants import G, year, au
+from astropy.constants import M_sun
+
+M1 = 2.06 * M_sun.value    # mass of Sirius A
+M2 = 1.02 * M_sun.value    # mass of Sirius B
+
+a = 2.64 * 7.4957 * au     # semi-major axis
+e = 0.5914                 # eccentricity
+
+# orbital period
+T = 2*np.pi * (G*(M1+M2))**(-1/2) * a**(3/2)
+print("Orbital period = {:.1f} yr".format(T/year))
+```
+
+Output: `Orbital period = 50.2 yr`
+
+**State vector formulation:**
+
+$$\mathbf{s} = \begin{pmatrix} x_1 \\ y_1 \\ x_2 \\ y_2 \\ v_{1x} \\ v_{1y} \\ v_{2x} \\ v_{2y} \end{pmatrix}, \quad \mathbf{f}(t, \mathbf{s}) = \begin{pmatrix} v_{1x} \\ v_{1y} \\ v_{2x} \\ v_{2y} \\ F_{12x}/M_1 \\ F_{12y}/M_1 \\ -F_{12x}/M_2 \\ -F_{12y}/M_2 \end{pmatrix}$$
+
+**Using SciPy's solve_ivp:**
+
+```python
+from scipy.integrate import solve_ivp
+
+def state_derv(t, state):
+    alpha = G * M1 * M2
+    
+    delta_x = state[2] - state[0]   # x2 - x1
+    delta_y = state[3] - state[1]   # y2 - y1
+    
+    d3 = (delta_x**2 + delta_y**2)**(3/2)
+    
+    Fx = alpha * delta_x / d3
+    Fy = alpha * delta_y / d3
+    
+    return np.array([state[4], state[5], state[6], state[7],
+                     Fx/M1, Fy/M1, -Fx/M2, -Fy/M2])
+
+# solve
+tmp = solve_ivp(state_derv, (0, 3*T), init_state, dense_output=True)
+data = tmp.sol(t)
+```
+
+### Three-Body Problem: Algol System
+
+Algol Aa1 and Aa2 constitute an eclipsing binary with period < 3 days. Together with Algol Ab, they revolve with period 680 days.
+
+**Parameters:**
+
+```python
+from scipy.constants import day
+
+M1 = 3.17 * M_sun.value    # Algol Aa1
+M2 = 0.70 * M_sun.value    # Algol Aa2
+M3 = 1.76 * M_sun.value    # Algol Ab
+
+# inner orbit
+T12 = 2.867 * day
+e12 = 0
+
+# outer orbit
+T = 680.2 * day
+e = 0.227
+
+# semi-major axes from Kepler's third law
+a12 = (T12/(2*np.pi))**(2/3) * (G*(M1+M2))**(1/3)
+a = (T/(2*np.pi))**(2/3) * (G*(M1+M2+M3))**(1/3)
+```
+
+---
+
+## 4.4 Galaxy Collisions
+
+Model by Schroeder and Comins (1980s): treat a disk galaxy as gravitating point mass surrounded by a disk of test particles representing stars.
+
+**Initialization:**
+
+```python
+import galcol
+import astropy.units as unit
+
+galaxies = {
+    'intruder': galcol.parameters(
+        1e10,           # mass in solar masses
+        5,              # disk radius in kpc
+        (25, -25, -5),  # initial position in kpc
+        (-75, 75, 0),   # initial velocity in km/s
+        (0, 0, 1),      # normal to galactic plane
+        5,              # number of rings
+        1000,           # total number of stars
+        0.025),         # softening factor
+    'target': galcol.parameters(
+        5e10, 10, (-5, 5, 1), (15, -15, 0), (1, -1, 2**0.5),
+        10, 4000, 0.025),
+}
+
+galcol.init_disk(galaxies['intruder'])
+galcol.init_disk(galaxies['target'])
+```
+
+**Evolution:**
+
+```python
+t, data = galcol.evolve_two_disks(
+    galaxies['target'], galaxies['intruder'],
+    time_step=0.05*unit.Myr,
+    N_steps=10000,
+    N_snapshots=500)
+```
+
+**Visualization:**
+
+```python
+i = 100
+galcol.show_two_disks_3d(data[i,:,:],
+                         galaxies['target']['N_stars'],
+                         [-15, 15], [-15, 15], [-15, 15],
+                         t[i], 'two_disks')
+```
+
+---
+
+## 4.5 Stellar Clusters
+
+Loading N-body simulation data:
+
+```python
+import numpy as np
+
+n_files = 501
+
+for n in range(n_files):
+    snapshot = np.loadtxt(
+        "data_files/nbody/output_{:d}.dat".format(n),
+        dtype='float64')
+    
+    if n == 0:
+        data = np.array([snapshot])
+    else:
+        data = np.append(data, [snapshot], axis=0)
+
+# data.shape = (501, 1000, 8)
+```
+
+**Mass histogram:**
+
+```python
+import matplotlib.pyplot as plt
+
+plt.figure(figsize=(6,4), dpi=100)
+plt.hist(data[0,:,1], 20, histtype='step', lw=2)
+plt.xlabel('$M/M_\odot$')
+plt.ylabel('$N$')
+plt.savefig('cluster_hist_mass.pdf')
+```
+
+**Radial distances and velocities:**
+
+```python
+from astropy.constants import au, pc
+
+r = np.sqrt(data[:,:,2]**2 + data[:,:,3]**2 + data[:,:,4]**2) * au/pc
+v = np.sqrt(data[:,:,5]**2 + data[:,:,6]**2 + data[:,:,7]**2)
+```
+
+**RMS values:**
+
+```python
+r_rms = np.sqrt(np.mean(r**2, axis=1))
+v_rms = np.sqrt(np.mean(v**2, axis=1))
+r_median = np.median(r, axis=1)
+```
+
+---
+
+## 4.6 Expansion of the Universe
+
+The **Friedmann equation** for the scale factor $a(t)$:
+
+$$\dot{a} = H_0\sqrt{\frac{\Omega_{M,0}}{a} + \frac{\Omega_{rad,0}}{a^2} + \Omega_{\Lambda,0}a^2 + 1 - \Omega_0}$$
+
+**Parameters:**
+
+```python
+import numpy as np
+import astropy.units as unit
+from numkit import rk4_step
+
+# Hubble constant
+H0 = 67.7 * unit.km/unit.s/unit.Mpc
+print("H0 = {:.2e} 1/Gyr".format(H0.to(1/unit.Gyr)))
+
+# Cosmological models
+cosmology = {
+    'standard': (0.309, 1e-5, 0.691),      # ΛCDM
+    'matter sub': (0.3, 0, 0),              # open
+    'matter crit': (1.0, 0, 0),             # flat
+    'matter super': (2.0, 0, 0),            # closed
+}
+```
+
+**Derivative function:**
+
+```python
+def dota(t, a, OmegaM, OmegaR, OmegaL, H0):
+    Omega0 = OmegaM + OmegaR + OmegaL
+    return H0 * (OmegaM/a + OmegaR/a**2 + OmegaL*a**2 + 1 - Omega0)**(1/2)
+```
+
+**Integration:**
+
+```python
+H0_num = H0.to(1/unit.Gyr).value
+t_H = 1 / H0_num
+
+n = 1000
+dt = 2 * t_H / n
+t = np.linspace(0, 2*t_H, n+1)
+
+fig = plt.figure(figsize=(6,4), dpi=100)
+
+for model in cosmology:
+    a = np.zeros(n+1)
+    a[0] = 1e-2
+    
+    for i in range(n):
+        a[i+1] = rk4_step(dota, t[i], a[i], dt,
+                         *cosmology[model], H0_num)
+    
+    label = "$\Omega_M={:.1f}, \Omega_\Lambda={:.1f}$".format(
+        cosmology[model][0], cosmology[model][2])
+    plt.plot(t, a, label=label)
+
+plt.xlabel("$t$/Gyr")
+plt.ylabel("$a$")
+plt.legend()
+plt.savefig("scale_fct_evol.pdf")
+```
+
+**Finding the transition to accelerated expansion:**
+
+```python
+n = int(t_H / dt)
+a = np.zeros(n+1)
+a[0] = 1e-2
+
+for i in range(n):
+    a[i+1] = rk4_step(dota, i*dt, a[i], dt,
+                     *cosmology['standard'], H0_num)
+
+i = 0
+ddota = -1
+while ddota < 0 and i < n:
+    i += 1
+    # second-order centered differences
+    ddota = (a[i+1] - 2*a[i] + a[i-1]) / dt**2
+
+if ddota >= 0:
+    print("Transition time = {:.2f} Gyr".format(i*dt))
+```
+
+Output: `Transition time = 7.63 Gyr`
+
+**Age of the Universe and Big Crunch time:**
+
+```python
+from scipy import integrate
+
+OmegaM, OmegaR, OmegaL = cosmology['matter super']
+Omega0 = OmegaM + OmegaR + OmegaL
+
+tmp = integrate.quad(
+    lambda a: (OmegaM/a + OmegaR/a**2 + OmegaL*a**2 + 1 - Omega0)**(-1/2),
+    0, 2)
+
+t_crunch = 2 * tmp[0] / H0_num
+print("Time of Big Crunch: {:.1f} Gyr".format(t_crunch))
+```
+
+Output: `Time of Big Crunch: 90.7 Gyr`
+
+---
+
+## Exercises
+
+### Section 4.1
+**4.1** An important Bernoulli-type equation is the logistic differential equation $\dot{x} = kx(1-x)$. Compute numerical solutions for $k = 0.1, 1, 10$. Vary the time step and compare to the analytic solution.
+
+**4.2** Plot the propagation speed $\dot{r}_s$ of the Strömgren sphere relative to the speed of light.
+
+**4.3** Study the dependence of the error on the time step for the damped harmonic oscillator.
+
+### Section 4.2
+**4.4** Rewrite Simpson's rule for an array of function values. Compute the dissipated energy.
+
+**4.5** Solve for a meteoroid of radius $R = 25$ cm. Plot altitude and velocity, print impact time and speed, estimate when it becomes a meteor.
+
+**4.6** Falcon 9 rocket landing: compute terminal velocity, modify for thrust, find optimal ignition time.
+
+**4.7** Fall into a black hole: solve for coordinate time and proper time, compare stellar and supermassive black holes.
+
+### Section 4.3
+**4.8** Compare different solvers in `solve_ivp()` for Sirius A and B orbits.
+
+**4.9** Compute motion of a hypothetical planet in the Sirius system using test particle approximation.
+
+**4.10** Three-body problem with random initial conditions: analyze bound orbits, eclipses, triangle shapes.
+
+### Section 4.4
+**4.11** Compute evolution of an isolated disk. Visualize with `galcol.anim_disk_2d()`.
+
+**4.12** Study effect of impact parameter, relative velocity, disk orientation, and mass ratio.
+
+**4.13** Produce a Cartwheel-like galaxy from head-on collision.
+
+**4.14** Analyze trajectories of ejected stars, compute specific orbital energy.
+
+**4.15** Implement object-oriented version of `galcol.py`.
+
+### Section 4.5
+**4.16** Compare median, RMS, maximum and 90th percentile of $r$. Prepare scatter plots.
+
+**4.17** Compute total kinetic and potential energy, check virial equilibrium $2E_{kin} = -E_{pot}$.
+
+**4.18** Extend `nbody` module with symplectic N-body solver using direct force summation.
+
+### Section 4.6
+**4.19** Compute current age of Universe from Eq. (4.82). Compare with and without cosmological constant.
+
+**4.20** Apply `integrate.solve_ivp()` to Friedmann equation. Study deviation and effect of varying $\Omega_{\Lambda,0}$.
+
+**4.21** Compute luminosity distance $d_L(z)$ for $0.01 < z < 10$. Plot distance modulus vs. redshift.
+```
+
+这份文档是《Numerical Python in Astronomy and Astrophysics》一书的第4章，主要内容包括：
+
+1. **一阶微分方程的数值积分** - Euler方法、Runge-Kutta方法（RK4），以Strömgren球为例
+2. **二阶微分方程** - 前向Euler、辛Euler、RKN4方法，以阻尼谐振子为例
+3. **径向落体** - 小行星穿过地球大气层，包含空气阻力
+4. **轨道力学** - 二体问题（天狼星A和B）、三体问题（大陵五系统）
+5. **星系碰撞** - 使用test particle模型和Leapfrog积分
+6. **星团** - N体模拟数据分析，RMS距离和速度
+7. **宇宙膨胀** - Friedmann方程，ΛCDM模型，加速膨胀的转变时间
+
+每个部分都包含完整的Python代码示例和物理解释。
