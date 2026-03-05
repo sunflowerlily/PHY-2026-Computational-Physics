@@ -1,73 +1,73 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?xml-stylesheet type="text/xsl" href="http://localhost:3001/sitemap_style.xsl" ?>
+<?xml-stylesheet type="text/xsl" href="http://localhost:3002/sitemap_style.xsl" ?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>http://localhost:3001</loc>
+    <loc>http://localhost:3002</loc>
   </url>
   <url>
-    <loc>http://localhost:3001/introduction</loc>
+    <loc>http://localhost:3002/introduction</loc>
   </url>
   <url>
-    <loc>http://localhost:3001/week01-paradigm</loc>
+    <loc>http://localhost:3002/week01-paradigm</loc>
   </url>
   <url>
-    <loc>http://localhost:3001/week02-numpy</loc>
+    <loc>http://localhost:3002/week02-numpy</loc>
   </url>
   <url>
-    <loc>http://localhost:3001/week03-visualization</loc>
+    <loc>http://localhost:3002/week03-visualization</loc>
   </url>
   <url>
-    <loc>http://localhost:3001/introduction-1</loc>
+    <loc>http://localhost:3002/introduction-1</loc>
   </url>
   <url>
-    <loc>http://localhost:3001/week04-ivp</loc>
+    <loc>http://localhost:3002/week04-ivp</loc>
   </url>
   <url>
-    <loc>http://localhost:3001/week05-symplectic</loc>
+    <loc>http://localhost:3002/week05-symplectic</loc>
   </url>
   <url>
-    <loc>http://localhost:3001/week06-fft</loc>
+    <loc>http://localhost:3002/week06-fft</loc>
   </url>
   <url>
-    <loc>http://localhost:3001/week07-bvp</loc>
+    <loc>http://localhost:3002/week07-bvp</loc>
   </url>
   <url>
-    <loc>http://localhost:3001/week08-midterm-project</loc>
+    <loc>http://localhost:3002/week08-midterm-project</loc>
   </url>
   <url>
-    <loc>http://localhost:3001/week09-review</loc>
+    <loc>http://localhost:3002/week09-review</loc>
   </url>
   <url>
-    <loc>http://localhost:3001/introduction-2</loc>
+    <loc>http://localhost:3002/introduction-2</loc>
   </url>
   <url>
-    <loc>http://localhost:3001/week10-electrostatics</loc>
+    <loc>http://localhost:3002/week10-electrostatics</loc>
   </url>
   <url>
-    <loc>http://localhost:3001/week11-diffusion</loc>
+    <loc>http://localhost:3002/week11-diffusion</loc>
   </url>
   <url>
-    <loc>http://localhost:3001/week12-spectral-methods</loc>
+    <loc>http://localhost:3002/week12-spectral-methods</loc>
   </url>
   <url>
-    <loc>http://localhost:3001/week13-hpc</loc>
+    <loc>http://localhost:3002/week13-hpc</loc>
   </url>
   <url>
-    <loc>http://localhost:3001/introduction-3</loc>
+    <loc>http://localhost:3002/introduction-3</loc>
   </url>
   <url>
-    <loc>http://localhost:3001/week14-monte-carlo</loc>
+    <loc>http://localhost:3002/week14-monte-carlo</loc>
   </url>
   <url>
-    <loc>http://localhost:3001/week15-stat-phys</loc>
+    <loc>http://localhost:3002/week15-stat-phys</loc>
   </url>
   <url>
-    <loc>http://localhost:3001/week16-ai-discovery</loc>
+    <loc>http://localhost:3002/week16-ai-discovery</loc>
   </url>
   <url>
-    <loc>http://localhost:3001/week17-pinns</loc>
+    <loc>http://localhost:3002/week17-pinns</loc>
   </url>
   <url>
-    <loc>http://localhost:3001/week18-final-project</loc>
+    <loc>http://localhost:3002/week18-final-project</loc>
   </url>
 </urlset>
