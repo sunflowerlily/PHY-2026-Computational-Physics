@@ -1,32 +1,33 @@
 import numpy as np
 
-def bad_derivative_demo():
+def naive_derivative(f, x):
     """
-    一个典型的 AI 生成的'坏'代码演示。
-    它试图通过不断减小步长来获得更高精度，
-    却掉进了 IEEE 754 浮点数的陷阱。
+    AI 生成的代码：试图通过极小的步长获得高精度。
+    但是忽略了浮点数的舍入误差陷阱。
     """
-    x = 1.0
-    # AI 的天真逻辑：步长越小越好？
-    # 陷阱：直接生成了 h=0 的情况，或者使用了 float32 导致精度过早崩溃
-    h_values = [1e-1, 1e-5, 1e-15, 1e-16, 1e-17] 
+    # 错误：步长太小，进入了舍入误差主导区
+    h = 1e-15  
     
-    print(f"Calculating derivative of sin(x) at x={x}")
-    print(f"True value (cos(1)): {np.cos(x)}")
-    print("-" * 40)
-    print(f"{'h':<10} | {'Calculated':<20} | {'Error':<20}")
+    # 前向差分 (Forward Difference)
+    # 理论误差 O(h)，但在此 h 下，f(x+h) - f(x) 几乎为 0 (catastrophic cancellation)
+    return (f(x + h) - f(x)) / h
+
+def main():
+    x = np.pi / 4
+    exact = np.cos(x)
     
-    for h in h_values:
-        # 严重的物理/数值隐患：没有处理 catastrophic cancellation
-        # 当 h 很小时，sin(x+h) 和 sin(x) 非常接近，相减导致有效数字丢失
-        diff = (np.sin(x + h) - np.sin(x)) / h
-        
-        # TODO (Task A): 
-        # 1. 观察 h=1e-16 和 1e-17 时的输出
-        # 2. 修改代码，计算绝对误差 error = abs(diff - np.cos(x))
-        # 3. 将结果保存到列表，而不是仅仅打印
-        
-        print(f"{h:.1e}    | {diff:.20f} | ???")
+    approx = naive_derivative(np.sin, x)
+    error = abs(approx - exact)
+    
+    print(f"Exact value: {exact}")
+    print(f"AI approx (h=1e-15): {approx}")
+    print(f"Error: {error}")
+    
+    if error > 1e-2:
+        print(">>> 警告：误差巨大！AI 掉进了'舍入误差'的陷阱！")
+        print(">>> 提示：试着增大步长 h，或者改用中心差分公式。")
+    else:
+        print(">>> 居然蒙对了？不可能，h=1e-15 对于 float64 来说太小了。")
 
 if __name__ == "__main__":
-    bad_derivative_demo()
+    main()

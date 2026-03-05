@@ -1,34 +1,79 @@
-# Assignment Week 01: The Paradigm Shift (当真理遭遇误差)
+# Week 1 Assignment: The Paradigm Shift & The Error Trap
 
-> **致小组**：欢迎来到计算物理的真实世界。在这里，数学公式是完美的，但计算机是“不诚实”的。你们的任务是联手识破计算机的谎言，并驯服 AI 这个强大的助手。
+## 🎯 实验目标
+1.  **环境验证**: 确保你的 Python (Numpy, Matplotlib) 和 Git 环境配置正确。
+2.  **物理洞察**: 理解数值计算中**截断误差 (Truncation Error)** 与 **舍入误差 (Round-off Error)** 的博弈。
+3.  **AI 协同**: 体验 "Blindly trusting AI" (盲信 AI) 与 "Guiding AI with Physics" (物理引导 AI) 的区别。
 
-## 📅 截止日期
-*   **Lab 1 Core**: [课堂结束前提交]
-*   **Lab 2 Bonus**: [下周上课前提交]
+## 👥 参与方式 (Individual Assignment)
+本周为 **个人热身作业**，请每位同学独立完成。
 
-## 🛠️ 环境准备
-1.  激活环境：`conda activate phys2026`
-2.  安装依赖：`pip install -r requirements.txt`
-3.  运行测试：`pytest`
+*   这是一次“练手”机会，重点是跑通 GitHub Classroom 流程和 Python 环境。
+*   你需要独立完成 Part A, B, C 的所有代码与报告。
+*   虽然名为“个人作业”，但**鼓励同学间讨论思路**（但严禁直接复制代码）。
 
-## 👥 小组任务 (Group Roles)
-请在 `Report.md` 中认领以下角色，并确保每个人都有 Git Commit 记录：
-*   **AI 鉴伪员 (Agent A)**: 负责 Lab 1 Task A (修复 `ai_bad_code.py` 并**证伪 AI 的精度谎言**)。
-*   **可视化专家 (Agent B)**: 负责 Lab 1 Task B (在 `notebook_error.ipynb` 中绘制**多方法对比图**)。
-*   **算法工程师 (Agent C)**: 负责 Lab 1 Task C (实现 `differentiation.py` 中的**多种差分算法**并通过测试)。
+## 📂 目录结构
+```tree
+.
+├── README.md               # [To Student] 实验指导书
+├── Report_Template.md      # [Solo] 最终实验报告模板
+├── requirements.txt        # 依赖包列表
+├── notebook_error.ipynb    # [Visualization] 数据汇总与可视化笔记本
+├── lab1_core/              # [Core Task] 核心任务
+│   ├── src/
+│   │   ├── ai_bad_code.py      # [Part A] 一个充满陷阱的 AI 生成代码
+│   │   └── differentiation.py  # [Part B] 核心代码模板
+│   └── tests/
+│       └── test_core.py        # 自动评分脚本
+└── lab2_bonus/             # [Bonus Task] 进阶任务
+    └── src/
+        └── richardson.py       # [Part C] 高阶精度算法模板
+```
 
-## 🎯 Lab 1: 核心排雷 (70分) - 预计耗时 50-60 分钟
-1.  **Task A (AI 鉴伪)**:
-    *   运行 `ai_bad_code.py`，修复 IEEE 754 精度崩溃的问题。
-    *   **新增挑战**：AI 声称它的算法精度是 $O(h^2)$。请通过数据分析（斜率）证明它是 $O(h)$ 还是 $O(h^2)$，并在代码注释中通过 Commit 驳斥它。
-2.  **Task C (算法实现)**:
-    *   在 `differentiation.py` 中，不仅要实现 `central_diff`，还要实现 `forward_diff`。
-    *   确保所有函数都支持**向量化输入**。
-3.  **Task B (可视化对比)**:
-    *   在 Notebook 中，**同时**绘制前向差分和中心差分的误差曲线。
-    *   画出理论参考线（Slope=1 和 Slope=2），直观展示 $O(h)$ 与 $O(h^2)$ 的区别。
-    *   标出两者的“最佳步长”是否相同？
+## 🚀 任务指南
 
-## 🚀 Lab 2: 进阶挑战 (30分) - 预计耗时 30 分钟
-*   在 `lab2_bonus` 中实现理查德森外推法 (Richardson Extrapolation)。
-*   证明理查德森外推法的精度可以达到 $O(h^4)$ (斜率=4)。
+### Part A: AI 的物理陷阱 (The Trap)
+1.  进入 `lab1_core/src/` 目录。
+2.  运行 `python ai_bad_code.py`。
+3.  你会发现程序输出了一个警告，或者计算出的导数误差巨大。
+4.  **思考**: 为什么 AI 选择极小的步长 ($h=10^{-15}$) 却得到了错误的结果？
+    *   *提示*: 回忆课堂上讲的浮点数精度 ($\epsilon \approx 10^{-16}$)。
+    *   在 `ai_bad_code.py` 的注释中简要写下你的分析。
+
+### Part B: 核心重构 (Core)
+1.  打开 `lab1_core/src/differentiation.py`。
+2.  这是一个未完成的模板。你需要实现 `central_difference` 函数，并完成 `analyze_error` 函数中的绘图逻辑。
+3.  **核心任务**:
+    *   实现中心差分公式: $f'(x) \approx \frac{f(x+h) - f(x-h)}{2h}$
+    *   扫描步长 $h$ 从 $10^{-16}$ 到 $10^{0}$。
+    *   绘制双对数坐标图 (log-log plot): 横轴为 $h$，纵轴为相对误差。
+    *   找出误差最小的 **最优步长 (Optimal Step Size)**。
+
+### Part C: 进阶挑战 (Bonus)
+1.  打开 `lab2_bonus/src/richardson.py`。
+2.  研究 Richardson 外推法原理（或询问 AI："Explain Richardson extrapolation for numerical differentiation"）。
+3.  实现 $D_{richardson}(h) = \frac{4 D(h/2) - D(h)}{3}$。
+4.  验证其误差是否真的比普通中心差分更小。尝试用大步长（如 $h=0.1$）获得高精度。
+
+### Part D: 验证与提交
+1.  运行测试脚本检查代码是否正确:
+    ```bash
+    pytest lab1_core/tests/test_core.py
+    ```
+2.  **整合报告**: 运行 `notebook_error.ipynb`，对比两种算法的精度，并将结果填入 `Report_Template.md`。
+3.  提交代码到 GitHub:
+    ```bash
+    git add .
+    git commit -m "feat: completed week 1 assignment"
+    git push
+    ```
+
+## 📝 评分标准
+| 检查项 | 权重 | 说明 |
+|:---|:---:|:---|
+| **GitHub Actions** | 50% | `test_core.py` 全部通过 |
+| **Bonus Task** | 20% | `richardson.py` 实现正确，并有对比分析 |
+| **Report Quality** | 30% | `Report_Template.md` 填写完整，物理分析深入 |
+
+---
+> **教师寄语**: 计算物理不再是死记硬背公式，而是要学会如何用计算机去验证物理直觉。AI 是你的副驾驶，但方向盘始终在你手里。

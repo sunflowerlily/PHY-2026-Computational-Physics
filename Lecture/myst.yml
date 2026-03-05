@@ -37,3 +37,5 @@ project:
         - file: part4_stochastic_ai/week18_final_project.md
 site:
   template: book-theme
+  # options:
+  #   base_url: /PHY-2026-Computational-Physics/

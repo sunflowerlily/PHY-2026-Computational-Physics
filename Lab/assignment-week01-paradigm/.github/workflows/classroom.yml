@@ -1,0 +1,30 @@
+name: Week 1 Autograding
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest
+        
+    - name: Run Autograding Tests (Pytest)
+      run: |
+        # Run tests and show results
+        pytest lab1_core/tests/test_core.py
+        
+    - name: Check for Code Formatting (Optional)
+      # 可以在这里添加 black 或 flake8 检查
+      run: echo "Code style check passed (placeholder)"
