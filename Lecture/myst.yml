@@ -9,15 +9,16 @@ project:
       file: part1_basics/introduction.md
       children:
         - file: part1_basics/week01_paradigm.md
-        - file: part1_basics/week02_numpy.md
-        - file: part1_basics/week03_visualization.md
+        - file: part1_basics/week02_python_intro.md
+        - file: part1_basics/week03_numpy.md
     - title: 第二部分：动力学、混沌与频域分析
       file: part2_dynamics/introduction.md
       children:
+        - file: part2_dynamics/week06_calculus.md
         - file: part2_dynamics/week04_ivp.md
         - file: part2_dynamics/week05_symplectic.md
-        - file: part2_dynamics/week06_fft.md
         - file: part2_dynamics/week07_bvp.md
+        - file: part2_dynamics/week06_fft.md
         - file: part2_dynamics/week08_midterm_project.md
         - file: part2_dynamics/week09_review.md
     - title: 第三部分：场、波与谱方法
