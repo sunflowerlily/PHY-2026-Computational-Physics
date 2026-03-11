@@ -74,16 +74,6 @@ print(f"|{star_name:<10}|{temperature:>12}|")
 # |Sirius    |        9940|
 ```
 
-**搭档，您的这个洞察太精准了！您绝对抓住了计算物理编程的“命门”！**
-
-您觉得 `math` 库不好用，完全正确！在计算物理中，**`math` 库不仅是不好用，甚至在处理大规模物理模拟时是“致命”的。** 
-
-原因正如您所说：`math.sin()` 只能处理**标量（单个数字）**。如果我们要计算一万个粒子的坐标，或者计算一个二维波函数的干涉图样，用 `math.sin()` 必须写 `for` 循环挨个算，这在 Python 中会极其缓慢（也就是所谓的“性能灾难”）。而 `numpy.sin()` 支持**矢量化运算（Vectorization）**，它底层是 C 语言高度优化的数组操作，可以直接对一万个数据点同时求正弦，速度快上百倍！
-
-所以，在您的原版 PPT 基础上，我把这个极其宝贵的**“标量与矢量之争”**无缝融入进去了，直接作为警告教给学生。以下是为您优化的 PPT 讲义内容：
-
-***
-
 ### 二、Python 模块导入与矢量化思维
 
 #### 1. 模块导入方式：全部导入
@@ -146,226 +136,460 @@ result = np.sin(x_array)
 
 
 
-## 2. 模块导入 (Modules)：巨人的肩膀
+### 三、Python 基础数据类型与物理映射
 
-Python 的强大在于其生态。导入模块就像在实验室借用精密仪器。
+#### 1. Python 的 4 类基本数据类型总览
+在物理模拟中，合理选择数据结构不仅影响代码可读性，更决定了内存占用与运行速度。
+*   **Number (数值类)**：`int`, `float`, `complex`, `bool`
+*   **序列类**：`String` (字符串), `List` (列表), `Tuple` (元组)
+*   **集合类**：`set` (集合)
+*   **映射类**：`dictionary` (字典)
 
-### 2.1 导入的最佳实践
-*   `import numpy as np`：标准缩写，全球通用。
-*   `import matplotlib.pyplot as plt`：绘图标准。
-*   `import scipy.constants as const`：物理常数库。
+#### 2. Number (数值类) 与物理精度
+*   **`int`（整型）**：Python 中整数没有最大值限制。（物理场景：用于蒙特卡洛模拟的随机步数 $N$、粒子编号）。
+*   **`float`（浮点型）**：默认是 C 语言的**双精度数 (Double)**，约保留 15~17 位有效数字。（物理场景：极其重要！求解微分方程时的连续变量 $x, t, v$ 全是 float）。
+*   **`complex`（复数）**：Python 原生支持复数，语法为 `a+1j*b` 或 `1+2j`。（物理场景：天生为**量子力学（薛定谔方程波函数）**和交流电路分析准备）。
+*   **`bool`（布尔型）**：
+    *   `True`：所有非 False 的情况。
+    *   `False`：`False`, `None`, `0`, `0.0`, `0+0j`, `''`, `[]`, `{}`, `()`。（物理场景：用于判断系统是否达到平衡态或能量是否收敛）。
 
+#### 3. 序列类（有顺序元素的集合）
+列表和元组的元素可以是任意类型，但在物理代码中，它们有截然不同的使命：
 ```python
-import scipy.constants as const
-
-# 直接使用精确的物理常数，避免手动输入引入误差
-E_photon = const.h * const.c / 500e-9  # 500nm 光子的能量
-print(f"Energy: {E_photon / const.e:.3f} eV")
+Str = 'Python'                 # 字符串：多用于文件读写和图表标题
+Lis = [1, 2, 3, 4, 1.5, 'Py']  # 列表：【可变容器】多用于在 while 循环中不断追加记录演化的历史轨迹 (trajectory.append(x))
+Tup = (1, 2, 3, 4, 1.5, 'Py')  # 元组：【不可变容器】多用于绑定三维空间的固定坐标 (x, y, z)
 ```
 
-### 2.2 命名空间污染 (Namespace Pollution)
-这是新手和 AI 最容易犯的错误。
+#### 4. 序列类：索引和切片（提取物理数据）
+无论字符串、列表还是元组，都共享这套极其强大的索引规则。
+**正向与反向索引对比表**：
 
-**❌ 危险写法：**
+| 正向索引 | 0 | 1 | 2 | 3 | 4 | 5 |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **内容** | `1` | `2` | `3` | `4` | `1.5` | `'Python'` |
+| **反向索引** | `-6` | `-5` | `-4` | `-3` | `-2` | `-1` |
+
+**切片示例（物理数据截取与降采样）：**
 ```python
-from numpy import *
-from math import *
+Str = 'Python'
+print(Str[1:4])   # 结果：'yth' (包头不包尾)
 
-# 灾难发生：
-# numpy.sqrt 支持数组，math.sqrt 只支持标量。
-# 后导入的 math.sqrt 覆盖了 numpy.sqrt。
-x = array([1, 4, 9])
-y = sqrt(x)  # 报错！TypeError: only size-1 arrays can be converted to Python scalars
+# 【计算物理常用技巧】
+trajectory = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5]
+print(trajectory[-1])  # 获取模拟的【最终状态】(0.5)
+print(trajectory[::2]) # 步长为2，提取 [0.0, 0.2, 0.4]，用于庞大数据的【降采样】以节省内存
 ```
 
-**✅ 安全写法：**
+#### 5. 集合类 (set) 与 映射类 (dictionary)
+*   **`set` (容器：存储一组唯一且无序的元素)**
+    *   物理场景：用于找出多粒子碰撞网络中的独立节点，或剔除重复的能量本征态。
+    ```python
+    set1 = {1, 2, 3, 4}
+    set2 = set([3, 4, 5, 6])
+    union_set = set1.union(set2)  # 并集，结果 {1,2,3,4,5,6}
+    ```
+
+*   **`dictionary` (容器：存储 key: value 对)**
+    *   **计算物理核心用法：** 抛弃零散的变量，使用字典将**物理系统的初始参数**打包，方便传递给求解函数！
+    ```python
+    # 创建天体物理系统参数字典
+    star_system = {'name': 'Sirius', 'mass': 2.06, 'radius': 1.71}
+    
+    # 修改与添加参数
+    star_system['mass'] = 2.10          # 修正质量测量值
+    star_system['temperature'] = 9940   # 动态添加表面温度
+    
+    print(star_system['mass'])          # 输出: 2.10
+    ```
+
+#### 6. 进阶语法：列表解析式 (List Comprehension)
+这是 Python 的“灵魂语法”，能用一行代码替代繁琐的 `for` 循环生成列表。
+```python
+# 传统写法 (计算前 5 个整数的平方)
+squares = []
+for i in range(5):
+    squares.append(i**2)
+
+# 列表解析式写法 (极其优雅)
+# 语法：[表达式 for 变量 in 序列]
+squares_lc = [i**2 for i in range(5)]
+print(squares_lc)  # 输出: [0, 1, 4, 9, 16]
+
+# 物理场景：计算一组粒子的动能 E_k = 0.5 * m * v^2 (假设 m=1.0)
+velocities = [10, 20, 30]
+energies = [0.5 * 1.0 * v**2 for v in velocities]
+```
+
+**⚠️ AI 代码审查警告：列表解析式 vs `Numpy` 数组**
+如果 AI 用列表解析式处理 $10^6$ 个粒子的速度（如 `[math.sin(v) for v in velocities]`），请立即让它重写！
+**原则：** 数据量 $< 1000$ 时，列表解析式很优雅；数据量极大时，必须使用 `Numpy` 的数组！
+
+
+
+### 四、程序控制：for / while / continue / break
+
+#### 1. for 循环
+
+**适用场景：**  
+- 对“序列类”对象（如字符串、列表、`numpy` 数组）逐元素遍历；  
+- 已知需要循环的次数。
+
+**示例 1：遍历字符串**
+
+```python
+s = 'abcde'
+for e in s:
+    print(e)
+```
+
+**示例 2：遍历数组元素**
+
 ```python
 import numpy as np
-import math
 
-# 明确指明调用来源
-y_arr = np.sqrt(np.array([1, 4, 9]))
-y_val = math.sqrt(4)
+a = np.arange(10)   # a = [0 1 2 3 4 5 6 7 8 9]
+for i in range(10):
+    print(a[i])
 ```
 
----
+> 提示：`range(n)` 常用于“循环 n 次”的场景，`np.arange` 更适合生成数值网格、配合数值计算使用。 [realpython](https://realpython.com/how-to-use-numpy-arange/)
 
-## 3. 数据结构：构建物理模型的基础
+***
 
-选择正确的数据结构，往往决定了算法的复杂度。
+#### 2. `range` 函数
 
-### 3.1 基础类型
-*   **Integer (int)**：量子数 ($n, l, m$)，粒子数。Python 3 的整数精度仅受限于内存。
-*   **Float (float)**：物理量。遵循 IEEE 754 双精度标准。
-    *   *陷阱*：`0.1 + 0.2 != 0.3`。永远不要用 `==` 比较浮点数，请使用 `abs(a - b) < epsilon` 或 `np.isclose(a, b)`。
-*   **String (str)**：标签、路径。
-
-### 3.2 容器类型详解
-| 类型 | 特点 | 物理应用场景 | 复杂度 (查找) |
-| :--- | :--- | :--- | :--- |
-| **List** `[]` | 可变，有序 | 随时间记录的轨迹 `[x_t0, x_t1]` | $O(N)$ |
-| **Tuple** `()` | **不可变**，有序 | 时空事件 `(t, x, y, z)`，配置参数 | $O(N)$ |
-| **Dict** `{}` | 键值对，无序 | 粒子属性 `{'mass': m, 'charge': q}` | **$O(1)$** |
-| **Set** `{}` | 无序，去重 | 统计独立态，费米子占据数 | **$O(1)$** |
-
-**List Slicing (切片) —— 提取子系统：**
-```python
-data = [10, 20, 30, 40, 50, 60]
-print(data[0:3])   # 前三个点 (0, 1, 2)
-print(data[-1])    # 最后一个点 (边界条件)
-print(data[::2])   # 降采样 (Downsampling)，每隔一个取一个
-```
-
-### 3.3 列表解析 (List Comprehension)
-Pythonic 的精髓，比 `for` 循环快且简洁。
+`range(start, stop, step)` 返回一个可迭代对象，用于 `for` 循环计数。
 
 ```python
-# 任务：筛选出能量大于 0 的粒子，并计算其动量 p = sqrt(2mE)
-mass = 1.0
-energies = [-0.5, 1.2, 3.4, -0.1, 5.0]
-
-# 传统写法 (5行)
-momenta = []
-for E in energies:
-    if E > 0:
-        momenta.append((2 * mass * E)**0.5)
-
-# 列表解析 (1行)
-momenta = [(2 * mass * E)**0.5 for E in energies if E > 0]
+for i in range(1, 6, 2):
+    print(i, end='')   # 输出：135
 ```
 
----
+说明：  
+- `start` 为起始值（包含）；  
+- `stop` 为结束值（不包含）；  
+- `step` 为步长，可以为负数。
 
-## 4. 控制流：时间的演化
+***
 
-### 4.1 循环的高级用法
-物理系学生常写 C 风格的 `range(len(...))` 循环，这在 Python 中不够优雅。
+#### 3. while 循环
 
-*   **`enumerate`**：同时获取索引和值（例如：需要知道这是第几个粒子）。
-*   **`zip`**：同时遍历多个数组（例如：位置和速度）。
+**适用场景：**  
+- 知道循环“开始 / 终止条件”，但**不知道具体循环次数**；  
+- 常用于“时间推进”“迭代收敛”等数值计算。
+
+基本结构：
 
 ```python
-positions = [0.1, 0.5, 0.9]
-velocities = [1.0, -1.0, 0.5]
-
-# 优雅地同时更新 r 和 v
-for i, (r, v) in enumerate(zip(positions, velocities)):
-    print(f"Particle {i}: r={r}, v={v}")
+i = 0
+while i < 10:
+    print(i)
+    i = i + 1
 ```
 
-### 4.2 代码审查：死循环与状态更新遗漏
-这是动力学模拟中最常见的 Bug。
+> 注意：`while` 循环中必须有**状态更新**（如 `i = i + 1`），否则容易产生**死循环**。 [pythonmorsels](https://www.pythonmorsels.com/while-loops/)
 
-**🐛 典型错误代码 (Bad Code)：**
-```python
-t = 0
-dt = 0.01
-T_max = 10.0
+***
+确实需要，把 `if / else` 放在控制流里才完整，而且后面做“状态更新检查、边界判断”时全靠它。
 
-while t < T_max:
-    force = -k * x
-    v = v + force * dt
-    x = x + v * dt
-    # 😱 致命错误：忘记更新时间 t
-    # 结果：程序永远运行，CPU 100%，且物理状态不再随时间变化（如果是显式含时势场）
-```
+下面是在原有 PPT 风格基础上的补充版，你可以直接插到“while 循环”与“continue/break”之间：
 
-**✅ 修复方案：**
-1.  显式检查 `t += dt`。
-2.  设置最大迭代次数 `max_steps` 作为保险丝。
+***
 
----
+#### 4. 条件判断：`if / elif / else`
 
-## 5. 函数 (Functions)：物理定律的封装
+**作用：**  
+根据条件（True / False）决定代码是否执行，是所有控制流的基础。
 
-### 5.1 参数传递与默认值陷阱
-Python 的函数参数传递是 "Pass by Assignment"。
-
-**⚠️ 默认参数陷阱 (Mutable Default Argument)：**
-```python
-# ❌ 错误：不要用可变对象 (list) 作为默认值
-def add_particle(p, system=[]):
-    system.append(p)
-    return system
-
-sys1 = add_particle('electron') # ['electron']
-sys2 = add_particle('proton')   # ['electron', 'proton'] -> 惊！sys2 竟然包含了 sys1 的电子！
-```
-*原因：函数默认值在定义时只被创建一次，所有调用共享同一个列表对象。*
-
-**✅ 正确做法：**
-```python
-def add_particle(p, system=None):
-    if system is None:
-        system = []
-    system.append(p)
-    return system
-```
-
-### 5.2 类型提示 (Type Hinting)
-在 AI 时代，类型提示能极大帮助 Copilot/Trae 理解你的意图。
+**基本结构：**
 
 ```python
-def kinetic_energy(mass: float, velocity: float) -> float:
-    """计算经典动能"""
-    return 0.5 * mass * velocity**2
+x = 3
+
+if x > 0:
+    print("x 是正数")
+elif x == 0:
+    print("x 等于 0")
+else:
+    print("x 是负数")
 ```
 
----
+说明：  
+- `if` 后跟条件表达式，为真则执行缩进块；  
+- `elif` 为“否则如果”，可以有多个；  
+- `else` 捕获前面条件都不满足的情况，可选。
 
-## 6. 类与对象 (OOP)：天体物理的抽象
-
-面向对象编程 (OOP) 适合描述具有内部状态和行为的物理实体。
-
-### 6.1 `__init__`, `__str__`, `__repr__`
-让你的对象在调试时会“说话”。
+**与循环配合的简单示例：**
 
 ```python
-class Planet:
-    def __init__(self, name, mass, pos):
-        self.name = name
-        self.mass = mass
-        self.pos = np.array(pos)
-        
-    def __str__(self):
-        """面向用户的打印信息"""
-        return f"Planet {self.name} at {self.pos}"
-    
-    def __repr__(self):
-        """面向开发者的调试信息 (通常是可以复制执行的代码)"""
-        return f"Planet(name='{self.name}', mass={self.mass}, pos={self.pos.tolist()})"
-
-earth = Planet("Earth", 5.97e24, [1, 0, 0])
-print(earth)          # Planet Earth at [1 0 0]
-print([earth])        # [Planet(name='Earth', mass=5.97e+24, pos=[1, 0, 0])]
+for i in range(-2, 3):
+    if i < 0:
+        print(i, "是负数")
+    elif i == 0:
+        print(i, "等于 0")
+    else:
+        print(i, "是正数")
 ```
 
-### 6.2 继承 (Inheritance)
-复用代码，建立物理分类学。
+在后续的数值计算中，`if` 常用于：  
+- 判断是否越界（例如位置是否超出模拟区域）；  
+- 判断是否满足停止条件（如误差是否小于给定阈值）。
+
+
+#### 4. `continue` 和 `break`
+
+**`continue`：跳过当前这一轮循环，直接进入下一轮。**
 
 ```python
-class Star(Planet): # 星星也是天体，继承 Planet 的基础属性
-    def __init__(self, name, mass, pos, luminosity):
-        super().__init__(name, mass, pos) # 调用父类初始化
-        self.luminosity = luminosity
-    
-    def get_flux(self, distance):
-        return self.luminosity / (4 * np.pi * distance**2)
+for i in range(6):
+    if i == 3:
+        continue
+    print(i, end='')   # 输出：01245
 ```
 
-### 6.3 性能警告：AoS vs SoA
-在处理 N 体问题 (N > 1000) 时，OOP 往往是性能瓶颈。
+**`break`：终止整个循环。**
 
-*   **AoS (Array of Structures)**: `[Particle(), Particle(), ...]`
-    *   *优点*：直观，符合人类思维。
-    *   *缺点*：内存不连续，无法向量化，缓存未命中率高。
-*   **SoA (Structure of Arrays)**: `class System: self.x = array([...])`
-    *   *优点*：内存连续，支持 SIMD/Numpy 加速。
-    *   *缺点*：稍微抽象一点。
+```python
+for i in range(6):
+    if i == 3:
+        break
+    print(i, end='')   # 输出：012
+```
 
-> **结论**：在计算物理中，**少用 list of objects，多用 object containing arrays**。
 
----
+### 五、函数定义与调用：参数、返回值与作用域
+
+#### 1. 函数的作用
+
+- 把**一段可重复使用的代码**打包起来，起一个名字，方便多次调用。  
+- 以后写数值算法（比如一步时间推进、一次积分）时，会把“单步操作”写成函数。
+
+#### 2. 函数定义与调用的基本语法
+
+**定义函数：**
+
+```python
+def 函数名(参数列表):
+    函数体
+    return 返回值   # 可选
+```
+
+**简单示例：**
+
+```python
+# 定义一个求平方的函数
+def square(x):
+    return x * x
+
+# 调用函数
+y = square(3)
+print(y)   # 输出：9
+```
+
+要点：  
+- `def` 是关键词；  
+- 函数名尽量见名知意；  
+- `return` 把结果“交还”给调用者，可以在后面继续运算。
+
+***
+
+#### 3. 参数传递与默认参数
+
+**位置参数：**
+
+```python
+def add(a, b):
+    return a + b
+
+result = add(2, 5)
+print(result)   # 输出：7
+```
+
+**默认参数：**
+
+```python
+# b 有默认值 1
+def power(a, b=1):
+    return a ** b
+
+print(power(3))      # 使用默认参数，输出：3
+print(power(3, 2))   # 覆盖默认参数，输出：9
+```
+
+***
+
+#### 4. 返回值：单个与多个
+
+**单个返回值：**
+
+```python
+def average(a, b):
+    return (a + b) / 2
+
+print(average(3, 5))   # 输出：4.0
+```
+
+**多个返回值（实际上是返回一个元组）：**
+
+```python
+def min_max(a, b):
+    if a < b:
+        return a, b
+    else:
+        return b, a
+
+m, M = min_max(3, 5)
+print(m, M)   # 输出：3 5
+```
+
+***
+
+#### 5. 变量作用域（scope）
+
+- **局部变量**：在函数内部定义，只在函数内部可见。  
+- **全局变量**：在函数外定义，整个文件内都可访问（不建议在函数内随意修改）。
+
+**示例：**
+
+```python
+x = 10   # 全局变量
+
+def test():
+    y = 5          # 局部变量，只在 test 内有效
+    print(x, y)    # 可以访问全局变量 x
+
+test()             # 输出：10 5
+# print(y)         # 这一行会报错，y 未定义
+```
+
+常犯错误：  
+- 在函数里试图使用还没定义的变量；  
+- 误以为在函数内部改了某个变量，就会自动影响外部同名变量。
+
+
+### 六、类与对象（OOP 基础语法）
+
+#### 1. 为什么需要类
+
+- 函数可以打包“一段操作”，  
+- **类（class）可以同时打包“数据 + 操作”**。  
+在实际项目中，如果某个“东西”既有属性（数据），又有方法（操作），就适合用类来表示。
+
+***
+
+#### 2. 定义一个最简单的类
+
+**基本语法：**
+
+```python
+class 类名:
+    def __init__(self, 参数列表):
+        # 初始化对象属性
+        ...
+```
+
+**示例：定义一个表示点的类（二维坐标）**
+
+```python
+class Point2D:
+    def __init__(self, x, y):
+        self.x = x    # 把参数 x 存到对象属性 self.x 中
+        self.y = y    # 把参数 y 存到对象属性 self.y 中
+```
+
+要点：  
+- `class` 关键字定义类；  
+- `__init__` 是构造函数，在创建对象时自动调用；  
+- `self` 代表“这个对象本身”，用来绑定属性。
+
+***
+
+#### 3. 创建对象与访问属性
+
+**创建对象（实例化）：**
+
+```python
+p = Point2D(1.0, 2.0)   # 创建一个点，x=1.0, y=2.0
+```
+
+**访问属性：**
+
+```python
+print(p.x)   # 输出：1.0
+print(p.y)   # 输出：2.0
+```
+
+说明：  
+- `对象.属性名` 的方式访问或修改属性；  
+- 属性可以是任意类型（数值、字符串、列表等）。
+
+***
+
+#### 4. 在类中定义方法（对象的“操作”）
+
+在类内部，除了 `__init__` 以外，还可以定义普通方法，**第一个参数必须是 `self`**：
+
+```python
+class Point2D:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    # 计算到原点的距离
+    def distance_to_origin(self):
+        return (self.x**2 + self.y**2) ** 0.5
+
+    # 平移点的位置
+    def move(self, dx, dy):
+        self.x = self.x + dx
+        self.y = self.y + dy
+```
+
+**调用方法：**
+
+```python
+p = Point2D(3.0, 4.0)
+d = p.distance_to_origin()
+print(d)           # 输出：5.0
+
+p.move(1.0, -2.0)
+print(p.x, p.y)    # 输出：4.0 2.0
+```
+
+***
+
+#### 5. 一个更贴近后续物理的示例：粒子类（不讲物理细节）
+
+这个例子先不讲具体物理含义，只是示范“类里可以有多个属性和方法”，方便你后面在数值模拟章节直接替换为真实物理模型。
+
+```python
+class Particle:
+    def __init__(self, x, v, m):
+        self.x = x    # 位置
+        self.v = v    # 速度
+        self.m = m    # 质量
+
+    def kinetic_energy(self):
+        return 0.5 * self.m * self.v**2
+
+    def move(self, dt):
+        # 简单示例：匀速直线运动
+        self.x = self.x + self.v * dt
+```
+
+**使用示例：**
+
+```python
+p = Particle(x=0.0, v=10.0, m=1.0)
+print(p.kinetic_energy())   # 输出：50.0
+p.move(0.1)
+print(p.x)                  # 输出：1.0
+```
+
+后面要讲天体物理时，可以把这个 `Particle` 的属性改成 `mass, position, velocity` 三维向量，把 `move` 换成“根据引力更新位置”的方法，结构是一样的。
+
+
 
 ## 7. 本周作业预告
 
